@@ -85,4 +85,4 @@ def login():
         return render_template('login.html', login_failed=True)
 
 if __name__ == '__main__':
-    app.run(debug=True, port=80)
+    app.run(debug=True)
